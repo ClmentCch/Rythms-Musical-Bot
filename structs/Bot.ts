@@ -98,17 +98,20 @@ export class Bot {
         const permissionsCheck: PermissionResult = await checkPermissions(command, interaction);
 
         if (permissionsCheck.result) {
-          command.execute(interaction as ChatInputCommandInteraction);
+          await command.execute(interaction as ChatInputCommandInteraction);
         } else {
           throw new MissingPermissionsException(permissionsCheck.missing);
         }
       } catch (error: any) {
         console.error(error);
 
-        if (error.message.includes("permissions")) {
-          interaction.reply({ content: error.toString(), ephemeral: true }).catch(console.error);
+        const message = error instanceof Error ? error.message : String(error);
+        const content = message.includes("permissions") ? error.toString() : i18n.__("common.errorCommand");
+
+        if (interaction.deferred || interaction.replied) {
+          interaction.followUp({ content, ephemeral: true }).catch(console.error);
         } else {
-          interaction.reply({ content: i18n.__("common.errorCommand"), ephemeral: true }).catch(console.error);
+          interaction.reply({ content, ephemeral: true }).catch(console.error);
         }
       }
     });

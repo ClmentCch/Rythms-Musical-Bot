@@ -40,8 +40,8 @@ export default {
 
     const url = normalizeYoutubeVideoUrl(argSongName);
 
-    if (interaction.replied) await interaction.editReply("⏳ Loading...").catch(console.error);
-    else await interaction.reply("⏳ Loading...");
+    if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
+    await interaction.editReply("⏳ Loading...").catch(console.error);
 
     // Start the playlist if playlist url was provided
     if (playlistPattern.test(argSongName) && !hasYoutubeVideoId(argSongName)) {

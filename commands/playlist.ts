@@ -31,7 +31,7 @@ export default {
       return interaction.reply({ content: i18n.__("playlist.errorNotChannel"), ephemeral: true }).catch(console.error);
 
     if (queue && channel.id !== queue.connection.joinConfig.channelId)
-      if (interaction.replied)
+      if (interaction.replied || interaction.deferred)
         return interaction
           .editReply({ content: i18n.__mf("play.errorNotInSameChannel", { user: interaction.client.user!.username }) })
           .catch(console.error);
@@ -50,7 +50,7 @@ export default {
     } catch (error) {
       console.error(error);
 
-      if (interaction.replied)
+      if (interaction.replied || interaction.deferred)
         return interaction.editReply({ content: i18n.__("playlist.errorNotFoundPlaylist") }).catch(console.error);
       else
         return interaction
@@ -87,7 +87,7 @@ export default {
       .setColor("#F8AA2A")
       .setTimestamp();
 
-    if (interaction.replied)
+    if (interaction.replied || interaction.deferred)
       return interaction.editReply({
         content: i18n.__mf("playlist.startedPlaylist", { author: interaction.user.id }),
         embeds: [playlistEmbed]
