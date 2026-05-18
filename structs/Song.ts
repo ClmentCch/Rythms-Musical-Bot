@@ -1,7 +1,7 @@
 import { AudioResource, createAudioResource, StreamType } from "@discordjs/voice";
 import youtube from "youtube-sr";
 import { i18n } from "../utils/i18n";
-import { videoPattern, isURL } from "../utils/patterns";
+import { videoPattern, isURL, normalizeYoutubeVideoUrl } from "../utils/patterns";
 
 const { stream, video_basic_info } = require("play-dl");
 
@@ -23,6 +23,7 @@ export class Song {
   }
 
   public static async from(url: string = "", search: string = "") {
+    url = normalizeYoutubeVideoUrl(url);
     const isYoutubeUrl = videoPattern.test(url);
 
     let songInfo;
@@ -36,7 +37,7 @@ export class Song {
         duration: parseInt(songInfo.video_details.durationInSec)
       });
     } else {
-      const result = await youtube.searchOne(search);
+      const result = await youtube.searchOne(search, "video");
 
       result ? null : console.log(`No results found for ${search}`);
 
@@ -50,12 +51,10 @@ export class Song {
         throw err;
       }
 
-      songInfo = await video_basic_info(`https://youtube.com/watch?v=${result.id}`);
-
       return new this({
-        url: songInfo.video_details.url,
-        title: songInfo.video_details.title,
-        duration: parseInt(songInfo.video_details.durationInSec)
+        url: `https://www.youtube.com/watch?v=${result.id}`,
+        title: result.title || search,
+        duration: Math.floor((result.duration || 0) / 1000)
       });
     }
   }
@@ -69,7 +68,7 @@ export class Song {
       playStream = await stream(this.url);
     }
 
-    if (!stream) return;
+    if (!playStream) return;
 
     return createAudioResource(playStream.stream, { metadata: this, inputType: playStream.type, inlineVolume: true });
   }

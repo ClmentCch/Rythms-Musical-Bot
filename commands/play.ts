@@ -4,7 +4,7 @@ import { bot } from "../index";
 import { MusicQueue } from "../structs/MusicQueue";
 import { Song } from "../structs/Song";
 import { i18n } from "../utils/i18n";
-import { playlistPattern } from "../utils/patterns";
+import { hasYoutubeVideoId, normalizeYoutubeVideoUrl, playlistPattern } from "../utils/patterns";
 
 export default {
   data: new SlashCommandBuilder()
@@ -38,13 +38,13 @@ export default {
         .reply({ content: i18n.__mf("play.usageReply", { prefix: bot.prefix }), ephemeral: true })
         .catch(console.error);
 
-    const url = argSongName;
+    const url = normalizeYoutubeVideoUrl(argSongName);
 
     if (interaction.replied) await interaction.editReply("⏳ Loading...").catch(console.error);
     else await interaction.reply("⏳ Loading...");
 
     // Start the playlist if playlist url was provided
-    if (playlistPattern.test(url)) {
+    if (playlistPattern.test(argSongName) && !hasYoutubeVideoId(argSongName)) {
       await interaction.editReply("🔗 Link is playlist").catch(console.error);
 
       return bot.slashCommandsMap.get("playlist")!.execute(interaction, "song");
@@ -57,15 +57,19 @@ export default {
     } catch (error: any) {
       console.error(error);
 
-      if (error.name == "NoResults")
-        return interaction
-          .reply({ content: i18n.__mf("play.errorNoResults", { url: `<${url}>` }), ephemeral: true })
-          .catch(console.error);
+      if (error.name == "NoResults") {
+        const content = i18n.__mf("play.errorNoResults", { url: `<${url}>` });
 
-      if (error.name == "InvalidURL")
-        return interaction
-          .reply({ content: i18n.__mf("play.errorInvalidURL", { url: `<${url}>` }), ephemeral: true })
-          .catch(console.error);
+        if (interaction.replied) return interaction.editReply({ content }).catch(console.error);
+        return interaction.reply({ content, ephemeral: true }).catch(console.error);
+      }
+
+      if (error.name == "InvalidURL") {
+        const content = i18n.__mf("play.errorInvalidURL", { url: `<${url}>` });
+
+        if (interaction.replied) return interaction.editReply({ content }).catch(console.error);
+        return interaction.reply({ content, ephemeral: true }).catch(console.error);
+      }
 
       if (interaction.replied)
         return await interaction.editReply({ content: i18n.__("common.errorCommand") }).catch(console.error);
